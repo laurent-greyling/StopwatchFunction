@@ -4,6 +4,7 @@ using Microsoft.WindowsAzure.Storage.Table;
 using StopwatchFunction.Entities;
 using StopwatchFunction.Helpers;
 using System;
+using System.Globalization;
 
 namespace StopwatchFunction.Services
 {
@@ -24,7 +25,7 @@ namespace StopwatchFunction.Services
 
                 stopwatchEntity.PartitionKey = stopwatchEntity.UserName.ToLower().Replace(" ", "-");
                 stopwatchEntity.RowKey = stopwatchEntity.StopWatchName.ToLower().Replace(" ", "-");
-
+                stopwatchEntity.StartTime = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
                 stopwatchEntity.Status = IsEntityAvailable(table, stopwatchEntity) ? StopwatchStatus.Reset.ToString() : StopwatchStatus.Created.ToString();
 
                 var operation = TableOperation.InsertOrMerge(stopwatchEntity);
@@ -42,7 +43,7 @@ namespace StopwatchFunction.Services
         {
             var retrieveOperation = TableOperation.Retrieve<StopwatchEntity>(stopwatchEntity.PartitionKey, stopwatchEntity.RowKey);
             var retrievedResult = table.Execute(retrieveOperation);
-            return retrievedResult.Result != null ? true : false;
+            return retrievedResult.Result != null;
         }
     }
 }

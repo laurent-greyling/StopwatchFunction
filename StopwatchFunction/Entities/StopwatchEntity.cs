@@ -9,5 +9,7 @@ namespace StopwatchFunction.Entities
         public string StopWatchName { get; set; }
 
         public string Status { get; set; }
+
+        public string StartTime { get; set; }
     }
 }
