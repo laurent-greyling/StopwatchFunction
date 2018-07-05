@@ -1,9 +1,10 @@
-﻿using StopwatchFunction.Entities;
+﻿using System.Threading.Tasks;
+using StopwatchFunction.Entities;
 
 namespace StopwatchFunction.Services
 {
     public interface IStopwatchDetails
     {
-        void Save(StopwatchEntity stopwatchEntity);
+        Task Save(StopwatchEntity stopwatchEntity);
     }
 }
