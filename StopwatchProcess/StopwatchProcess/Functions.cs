@@ -16,27 +16,32 @@ namespace StopwatchProcess
 {
     public class Functions
     {
+        private static Stopwatch _sw;
         // This function will get triggered/executed when a new message is written 
         // on an Azure Queue called queue.
         public static void ProcessQueueMessage([QueueTrigger("stopwatchqueue")] string message, TextWriter log)
         {
             var userData = JsonConvert.DeserializeObject<StopwatchEntity>(message);
-
-            var sw = new Stopwatch();
-
+            
             if (userData.Status == StopwatchStatus.Created.ToString())
             {
-                sw.Start();
+                _sw = new Stopwatch();
+                _sw.Start();
             }
 
-            if (userData.Status == StopwatchStatus.Reset.ToString())
+            if (userData.Status == StopwatchStatus.Restart.ToString())
             {
-                sw.Reset();
+                _sw.Restart();
             }
 
             if (userData.Status == StopwatchStatus.Stop.ToString())
             {
-                sw.Stop();
+                _sw.Stop();
+            }
+
+            if (userData.Status == StopwatchStatus.Reset.ToString())
+            {
+                _sw.Reset();
             }
 
             var operationsConnectionString = CloudConfigurationManager.GetSetting("StorageConnectionString");
@@ -46,27 +51,12 @@ namespace StopwatchProcess
             var queue = queueClient.GetQueueReference("elapsedtimequeue");
             queue.CreateIfNotExists();
 
-            userData.Status = StopwatchStatus.Running.ToString();
-            userData.ElapsedTime = sw.Elapsed.ToString();
+            userData.Status = StopwatchStatus.Running.ToString();            
 
-            //Needs some work.
-            var messageString = JsonConvert.SerializeObject(userData);
-            var queueMessage = new CloudQueueMessage(messageString);
-            queue.AddMessage(queueMessage);
-
-            var messageToUpdate = queue.GetMessage();
-
-            UpdateTable(operationsStorageAccount, userData);
-
-            while (sw.IsRunning)
+            while (_sw.IsRunning)
             {
-                userData.ElapsedTime = sw.Elapsed.ToString();
-
-                messageString = JsonConvert.SerializeObject(userData);
-
-                messageToUpdate.SetMessageContent(messageString);
-                queue.UpdateMessage(messageToUpdate, TimeSpan.FromSeconds(1.0),
-                    MessageUpdateFields.Content | MessageUpdateFields.Visibility);
+                userData.ElapsedTime = _sw.Elapsed.ToString();
+                UpdateTable(operationsStorageAccount, userData);
             }
         }
 

@@ -16,7 +16,7 @@ namespace StopwatchFunction
     {
         [FunctionName("CreateStopwatch")]
         public static async Task<HttpResponseMessage> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "CreateStopwatch")]HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "CreateStopwatch")]HttpRequestMessage req,
             TraceWriter log)
         {
             var data = await req.Content.ReadAsStringAsync();

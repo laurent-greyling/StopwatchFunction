@@ -16,10 +16,15 @@ namespace TriggerStopwatch
                 .WithParsed(async opt =>
                 {
                     const string baseAddress = "http://localhost:9000/";
+
                     var stopwatchDetails = JsonConvert.SerializeObject(new StopwatchModel
                     {
                         UserName = opt.UserName,
-                        StopWatchName = opt.StopwatchName
+                        StopWatchName = opt.StopwatchName,
+                        Start = opt.Start,
+                        Stop = opt.Stop,
+                        Reset = opt.Reset,
+                        Restart = opt.Restart
                     });
                     using (WebApp.Start<Startup>(url: baseAddress))
                     {

@@ -15,6 +15,7 @@ namespace StopwatchProcess
         static void Main()
         {
             var config = new JobHostConfiguration();
+            config.Queues.MaxDequeueCount = 2;
 
             if (config.IsDevelopment)
             {

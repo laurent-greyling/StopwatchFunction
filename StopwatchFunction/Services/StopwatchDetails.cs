@@ -46,7 +46,23 @@ namespace StopwatchFunction.Services
             entity.PartitionKey = entity.UserName.ToLower().Replace(" ", "-");
             entity.RowKey = entity.StopWatchName.ToLower().Replace(" ", "-");
             entity.StartTime = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
-            entity.Status = IsEntityAvailable(table, entity) ? StopwatchStatus.Reset.ToString() : StopwatchStatus.Created.ToString();
+
+            if (entity.Start)
+            {
+                entity.Status = StopwatchStatus.Created.ToString();
+            }
+            if (entity.Restart)
+            {
+                entity.Status = StopwatchStatus.Restart.ToString();
+            }
+            if (entity.Stop)
+            {
+                entity.Status = StopwatchStatus.Stop.ToString();
+            }
+            if (entity.Reset)
+            {
+                entity.Status = StopwatchStatus.Reset.ToString();
+            }
 
             var operation = TableOperation.InsertOrMerge(entity);
             await table.ExecuteAsync(operation);
