@@ -47,23 +47,31 @@ namespace StopwatchProcess
             var operationsConnectionString = CloudConfigurationManager.GetSetting("StorageConnectionString");
             var operationsStorageAccount =
                 CloudStorageAccount.Parse(operationsConnectionString);
-            var queueClient = operationsStorageAccount.CreateCloudQueueClient();
-            var queue = queueClient.GetQueueReference("elapsedtimequeue");
-            queue.CreateIfNotExists();
 
-            userData.Status = StopwatchStatus.Running.ToString();            
-
-            while (_sw.IsRunning)
+            if (_sw.IsRunning)
             {
-                userData.ElapsedTime = _sw.Elapsed.ToString();
-                UpdateTable(operationsStorageAccount, userData);
-            }
+                userData.Status = StopwatchStatus.Running.ToString();
+
+                while (_sw.IsRunning)
+                {
+                    userData.ElapsedTime = _sw.Elapsed.ToString();
+                    UpdateTable(operationsStorageAccount, userData);
+                }
+            }            
         }
 
         private static void UpdateTable(CloudStorageAccount storageAccount, StopwatchEntity entity)
         {
             var tableClient = storageAccount.CreateCloudTableClient();
             var table = tableClient.GetTableReference("stopwatchdetails");
+
+            var retrieveEntity = TableOperation.Retrieve<StopwatchEntity>(
+                entity.UserName.ToLower().Replace(" ", "-"),
+                entity.StopWatchName.ToLower().Replace(" ", "-")
+                );
+            var updateEntity = table.Execute(retrieveEntity);
+            ((StopwatchEntity)updateEntity.Result).Status = entity.Status;
+            ((StopwatchEntity)updateEntity.Result).ElapsedTime = entity.ElapsedTime;
 
             var operation = TableOperation.InsertOrMerge(entity);
             table.Execute(operation);

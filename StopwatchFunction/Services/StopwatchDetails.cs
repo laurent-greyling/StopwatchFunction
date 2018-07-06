@@ -8,20 +8,36 @@ using System.Globalization;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using StopwatchFunction.Models;
+using System.Linq;
 
 namespace StopwatchFunction.Services
 {
     public class StopwatchDetails : IStopwatchDetails
     {
+        private CloudTable _table;
+        private CloudQueue _queue;
+
+        public StopwatchDetails()
+        {
+            var storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("AzureWebJobsStorage"));
+
+            var tableClient = storageAccount.CreateCloudTableClient();
+            _table = tableClient.GetTableReference("stopwatchdetails");
+
+            var queueClient = storageAccount.CreateCloudQueueClient();
+            _queue = queueClient.GetQueueReference("stopwatchqueue");
+
+            _queue.CreateIfNotExists();
+            _table.CreateIfNotExists();
+        }
+
         public async Task Save(StopwatchEntity stopwatchEntity)
         {
             try
             {
-                var operationsConnectionString = CloudConfigurationManager.GetSetting("AzureWebJobsStorage");
-                var operationsStorageAccount =
-                    CloudStorageAccount.Parse(operationsConnectionString);
-
-                await UpdateTableAsync(operationsStorageAccount, stopwatchEntity);
+                await UpdateTableAsync(stopwatchEntity);
             }
             catch (Exception ex)
             {
@@ -30,19 +46,62 @@ namespace StopwatchFunction.Services
             }            
         }
 
-        private bool IsEntityAvailable(CloudTable table, StopwatchEntity stopwatchEntity)
+        public async Task<List<UserDetailsModel>> Retrieve(UserDetailsEntity userDetailsEntity)
         {
-            var retrieveOperation = TableOperation.Retrieve<StopwatchEntity>(stopwatchEntity.PartitionKey, stopwatchEntity.RowKey);
-            var retrievedResult = table.Execute(retrieveOperation);
-            return retrievedResult.Result != null;
+            try
+            {
+                var entityList = new List<UserDetailsModel>();
+                if (!string.IsNullOrEmpty(userDetailsEntity.UserName) && !string.IsNullOrEmpty(userDetailsEntity.StopWatchName))
+                {                    
+                    var userEntity = await RetrieveEntityAsync(userDetailsEntity);
+                    entityList.Add(new UserDetailsModel
+                    {
+                        UserName = ((UserDetailsEntity)userEntity.Result).UserName,
+                        StopWatchName = ((UserDetailsEntity)userEntity.Result).StopWatchName,
+                        Status = ((UserDetailsEntity)userEntity.Result).Status,
+                        ElapsedTime = ((UserDetailsEntity)userEntity.Result).ElapsedTime
+                    });
+                }
+
+                if (string.IsNullOrEmpty(userDetailsEntity.StopWatchName))
+                {
+                    var entities = RetrieveEntities(userDetailsEntity);
+                    entityList.AddRange(entities.Select(x => new UserDetailsModel
+                    {
+                        UserName = x.UserName,
+                        StopWatchName = x.StopWatchName,
+                        Status = x.Status,
+                        ElapsedTime = x.ElapsedTime
+                    }).ToList());
+                }
+
+                return entityList;
+            } 
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                throw;
+            }
         }
 
-        private async Task UpdateTableAsync(CloudStorageAccount storageAccount, StopwatchEntity entity)
+        private IEnumerable<UserDetailsEntity> RetrieveEntities(UserDetailsEntity userDetailsEntity)
         {
-            var tableClient = storageAccount.CreateCloudTableClient();
-            var table = tableClient.GetTableReference("stopwatchdetails");
-            table.CreateIfNotExists();
+            var query = new TableQuery<UserDetailsEntity>()
+                .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, userDetailsEntity.UserName.ToLower().Replace(" ", "-")));
 
+            return _table.ExecuteQuery(query);
+        }
+
+        private async Task<TableResult> RetrieveEntityAsync(UserDetailsEntity userdetailsEntity)
+        {
+            var retrieveOperation = TableOperation.Retrieve<UserDetailsEntity>(
+                userdetailsEntity.UserName.ToLower().Replace(" ", "-"),
+                userdetailsEntity.StopWatchName.ToLower().Replace(" ", "-"));
+            return await _table.ExecuteAsync(retrieveOperation);
+        }
+
+        private async Task UpdateTableAsync(StopwatchEntity entity)
+        {
             entity.PartitionKey = entity.UserName.ToLower().Replace(" ", "-");
             entity.RowKey = entity.StopWatchName.ToLower().Replace(" ", "-");
             entity.StartTime = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
@@ -65,20 +124,17 @@ namespace StopwatchFunction.Services
             }
 
             var operation = TableOperation.InsertOrMerge(entity);
-            await table.ExecuteAsync(operation);
+            await _table.ExecuteAsync(operation);
 
-            await AddMessageAsync(storageAccount, entity);
+            await AddMessageAsync(entity);
         }
 
-        private async Task AddMessageAsync(CloudStorageAccount storageAccount, StopwatchEntity entity)
+        private async Task AddMessageAsync(StopwatchEntity entity)
         {
-            var queueClient = storageAccount.CreateCloudQueueClient();
-            var queue = queueClient.GetQueueReference("stopwatchqueue");
-            queue.CreateIfNotExists();
-
             var messageString = JsonConvert.SerializeObject(entity);
             var message = new CloudQueueMessage(messageString);
-            await queue.AddMessageAsync(message);
+            await _queue.AddMessageAsync(message);
         }
+
     }
 }
