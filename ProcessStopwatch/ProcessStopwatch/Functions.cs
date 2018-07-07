@@ -1,28 +1,25 @@
-﻿using System;
-using System.Diagnostics;
-using System.Globalization;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Azure;
 using Microsoft.Azure.WebJobs;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Queue;
 using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json;
-using StopwatchProcess.Entities;
-using StopwatchProcess.Helpers;
+using ProcessStopwatch.Entities;
+using ProcessStopwatch.Helpers;
 
-namespace StopwatchProcess
+namespace ProcessStopwatch
 {
     public class Functions
     {
         private static Stopwatch _sw;
         // This function will get triggered/executed when a new message is written 
         // on an Azure Queue called queue.
-        public static void ProcessQueueMessage([QueueTrigger("stopwatchqueue")] string message, TextWriter log)
+        public static async Task ProcessQueueMessage([QueueTrigger("stopwatchqueue")] string message, TextWriter log)
         {
             var userData = JsonConvert.DeserializeObject<StopwatchEntity>(message);
-            
+
             if (userData.Status == StopwatchStatus.Created.ToString())
             {
                 _sw = new Stopwatch();
@@ -48,19 +45,17 @@ namespace StopwatchProcess
             var operationsStorageAccount =
                 CloudStorageAccount.Parse(operationsConnectionString);
 
-            if (_sw.IsRunning)
-            {
-                userData.Status = StopwatchStatus.Running.ToString();
+            if (!_sw.IsRunning) return;
+            userData.Status = StopwatchStatus.Running.ToString();
 
-                while (_sw.IsRunning)
-                {
-                    userData.ElapsedTime = _sw.Elapsed.ToString();
-                    UpdateTable(operationsStorageAccount, userData);
-                }
-            }            
+            while (_sw.IsRunning)
+            {
+                userData.ElapsedTime = _sw.Elapsed.ToString();
+                await UpdateTable(operationsStorageAccount, userData);
+            }
         }
 
-        private static void UpdateTable(CloudStorageAccount storageAccount, StopwatchEntity entity)
+        private static async Task UpdateTable(CloudStorageAccount storageAccount, StopwatchEntity entity)
         {
             var tableClient = storageAccount.CreateCloudTableClient();
             var table = tableClient.GetTableReference("stopwatchdetails");
@@ -68,12 +63,20 @@ namespace StopwatchProcess
             var retrieveEntity = TableOperation.Retrieve<StopwatchEntity>(
                 entity.UserName.ToLower().Replace(" ", "-"),
                 entity.StopWatchName.ToLower().Replace(" ", "-")
-                );
-            var updateEntity = table.Execute(retrieveEntity);
-            ((StopwatchEntity)updateEntity.Result).Status = entity.Status;
-            ((StopwatchEntity)updateEntity.Result).ElapsedTime = entity.ElapsedTime;
+            );
+            var updateEntity = await table.ExecuteAsync(retrieveEntity);
 
-            var operation = TableOperation.InsertOrMerge(entity);
+            var newEntity = new StopwatchEntity
+            {
+                PartitionKey = ((StopwatchEntity)updateEntity.Result).PartitionKey,
+                RowKey = ((StopwatchEntity)updateEntity.Result).RowKey,
+                UserName = ((StopwatchEntity)updateEntity.Result).UserName,
+                StopWatchName = ((StopwatchEntity)updateEntity.Result).StopWatchName,
+                Status = entity.Status,
+                ElapsedTime = entity.ElapsedTime
+            };
+
+            var operation = TableOperation.InsertOrMerge(newEntity);
             table.Execute(operation);
         }
     }

@@ -1,4 +1,4 @@
-﻿namespace StopwatchProcess.Helpers
+﻿namespace ProcessStopwatch.Helpers
 {
     public enum StopwatchStatus
     {

@@ -16,8 +16,8 @@ namespace StopwatchFunction.Services
 {
     public class StopwatchDetails : IStopwatchDetails
     {
-        private CloudTable _table;
-        private CloudQueue _queue;
+        private readonly CloudTable _table;
+        private readonly CloudQueue _queue;
 
         public StopwatchDetails()
         {

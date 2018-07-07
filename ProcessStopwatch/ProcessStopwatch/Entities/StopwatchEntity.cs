@@ -1,6 +1,6 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
 
-namespace StopwatchProcess.Entities
+namespace ProcessStopwatch.Entities
 {
     public class StopwatchEntity : TableEntity
     {
@@ -8,8 +8,6 @@ namespace StopwatchProcess.Entities
         public string StopWatchName { get; set; }
 
         public string Status { get; set; }
-
-        public string StartTime { get; set; }
         public string ElapsedTime { get; set; }
     }
 }

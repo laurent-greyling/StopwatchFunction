@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("StopwatchProcess")]
+[assembly: AssemblyTitle("ProcessStopwatch")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("StopwatchProcess")]
+[assembly: AssemblyProduct("ProcessStopwatch")]
 [assembly: AssemblyCopyright("Copyright ©  2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("656a2ed0-4ada-4c33-b18e-be9366017739")]
+[assembly: Guid("871435f5-5aff-49a9-a130-f81e9c1d741a")]
 
 // Version information for an assembly consists of the following four values:
 //
