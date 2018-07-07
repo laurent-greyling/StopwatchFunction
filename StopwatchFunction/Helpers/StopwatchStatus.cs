@@ -6,6 +6,7 @@
         Reset = 1,
         Stop = 2,
         Running = 3,
-        Restart = 4
+        Restart = 4,
+        Start = 5
     }
 }

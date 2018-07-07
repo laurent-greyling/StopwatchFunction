@@ -9,5 +9,6 @@ namespace StopwatchFunction.Services
     {
         Task Save(StopwatchEntity stopwatchEntity);
         Task<List<UserDetailsModel>> Retrieve(UserDetailsEntity userDetailsEntity);
+        Task<List<UserDetailsModel>> RetrieveElaspedTime(UserDetailsEntity userDetailsEntity);
     }
 }

@@ -1,43 +1,29 @@
-﻿using Microsoft.Azure;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Table;
-using StopwatchFunction.Entities;
-using StopwatchFunction.Helpers;
+﻿using StopwatchFunction.Entities;
 using System;
-using System.Globalization;
 using System.Threading.Tasks;
-using Microsoft.WindowsAzure.Storage.Queue;
-using Newtonsoft.Json;
 using System.Collections.Generic;
-using StopwatchFunction.Models;
+using System.Globalization;
 using System.Linq;
+using StopwatchFunction.Helpers;
+using StopwatchFunction.Models;
 
 namespace StopwatchFunction.Services
 {
     public class StopwatchDetails : IStopwatchDetails
     {
-        private readonly CloudTable _table;
-        private readonly CloudQueue _queue;
-
-        public StopwatchDetails()
+        private readonly IAzureService _azureService;
+        private readonly ElapsedTime _elapsedTime;
+        public StopwatchDetails(IAzureService azureService)
         {
-            var storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("AzureWebJobsStorage"));
-
-            var tableClient = storageAccount.CreateCloudTableClient();
-            _table = tableClient.GetTableReference("stopwatchdetails");
-
-            var queueClient = storageAccount.CreateCloudQueueClient();
-            _queue = queueClient.GetQueueReference("stopwatchqueue");
-
-            _queue.CreateIfNotExists();
-            _table.CreateIfNotExists();
+            _azureService = azureService;
+            _elapsedTime = new ElapsedTime();
         }
 
         public async Task Save(StopwatchEntity stopwatchEntity)
         {
             try
             {
-                await UpdateTableAsync(stopwatchEntity);
+                await _azureService.UpdateTableAsync(stopwatchEntity);
             }
             catch (Exception ex)
             {
@@ -46,6 +32,8 @@ namespace StopwatchFunction.Services
             }            
         }
 
+        //This is for when the webjob runs, this will get elapsed time the webjob saves into table. The webjob is not efficient and accurate.
+        //Leaving this in more as a reference as this is not production code just example code
         public async Task<List<UserDetailsModel>> Retrieve(UserDetailsEntity userDetailsEntity)
         {
             try
@@ -53,7 +41,7 @@ namespace StopwatchFunction.Services
                 var entityList = new List<UserDetailsModel>();
                 if (!string.IsNullOrEmpty(userDetailsEntity.UserName) && !string.IsNullOrEmpty(userDetailsEntity.StopWatchName))
                 {                    
-                    var userEntity = await RetrieveEntityAsync(userDetailsEntity);
+                    var userEntity = await _azureService.RetrieveEntityAsync(userDetailsEntity);
                     entityList.Add(new UserDetailsModel
                     {
                         UserName = ((UserDetailsEntity)userEntity.Result).UserName,
@@ -63,17 +51,16 @@ namespace StopwatchFunction.Services
                     });
                 }
 
-                if (string.IsNullOrEmpty(userDetailsEntity.StopWatchName))
+                if (!string.IsNullOrEmpty(userDetailsEntity.StopWatchName)) return entityList;
+
+                var entities = _azureService.RetrieveEntities(userDetailsEntity);
+                entityList.AddRange(entities.Select(x => new UserDetailsModel
                 {
-                    var entities = RetrieveEntities(userDetailsEntity);
-                    entityList.AddRange(entities.Select(x => new UserDetailsModel
-                    {
-                        UserName = x.UserName,
-                        StopWatchName = x.StopWatchName,
-                        Status = x.Status,
-                        ElapsedTime = x.ElapsedTime
-                    }).ToList());
-                }
+                    UserName = x.UserName,
+                    StopWatchName = x.StopWatchName,
+                    Status = x.Status,
+                    ElapsedTime = x.ElapsedTime
+                }).ToList());
 
                 return entityList;
             } 
@@ -84,57 +71,43 @@ namespace StopwatchFunction.Services
             }
         }
 
-        private IEnumerable<UserDetailsEntity> RetrieveEntities(UserDetailsEntity userDetailsEntity)
+        public async Task<List<UserDetailsModel>> RetrieveElaspedTime(UserDetailsEntity userDetailsEntity)
         {
-            var query = new TableQuery<UserDetailsEntity>()
-                .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, userDetailsEntity.UserName.ToLower().Replace(" ", "-")));
+            try
+            {
+                var entityList = new List<UserDetailsModel>();
+                if (!string.IsNullOrEmpty(userDetailsEntity.UserName) && !string.IsNullOrEmpty(userDetailsEntity.StopWatchName))
+                {
+                    var userEntity = await _azureService.RetrieveEntityAsync(userDetailsEntity);
+                    entityList.Add(new UserDetailsModel
+                    {
+                        UserName = ((UserDetailsEntity)userEntity.Result).UserName,
+                        StopWatchName = ((UserDetailsEntity)userEntity.Result).StopWatchName,
+                        Status = ((UserDetailsEntity)userEntity.Result).Status,
+                        ElapsedTime = _elapsedTime.CalculateElapsedTime(((UserDetailsEntity)userEntity.Result).StartTime, ((UserDetailsEntity)userEntity.Result).EndTime)
+                    });
+                }
 
-            return _table.ExecuteQuery(query);
+                if (!string.IsNullOrEmpty(userDetailsEntity.StopWatchName)) return entityList;
+
+                var entities = _azureService.RetrieveEntities(userDetailsEntity);
+                entityList.AddRange(entities.Select(x => new UserDetailsModel
+                {
+                    UserName = x.UserName,
+                    StopWatchName = x.StopWatchName,
+                    Status = x.Status,
+                    ElapsedTime = _elapsedTime.CalculateElapsedTime(x.StartTime, x.EndTime)
+                }).ToList());
+
+                return entityList;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                throw;
+            }
         }
 
-        private async Task<TableResult> RetrieveEntityAsync(UserDetailsEntity userdetailsEntity)
-        {
-            var retrieveOperation = TableOperation.Retrieve<UserDetailsEntity>(
-                userdetailsEntity.UserName.ToLower().Replace(" ", "-"),
-                userdetailsEntity.StopWatchName.ToLower().Replace(" ", "-"));
-            return await _table.ExecuteAsync(retrieveOperation);
-        }
-
-        private async Task UpdateTableAsync(StopwatchEntity entity)
-        {
-            entity.PartitionKey = entity.UserName.ToLower().Replace(" ", "-");
-            entity.RowKey = entity.StopWatchName.ToLower().Replace(" ", "-");
-            entity.StartTime = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
-
-            if (entity.Start)
-            {
-                entity.Status = StopwatchStatus.Created.ToString();
-            }
-            if (entity.Restart)
-            {
-                entity.Status = StopwatchStatus.Restart.ToString();
-            }
-            if (entity.Stop)
-            {
-                entity.Status = StopwatchStatus.Stop.ToString();
-            }
-            if (entity.Reset)
-            {
-                entity.Status = StopwatchStatus.Reset.ToString();
-            }
-
-            var operation = TableOperation.InsertOrMerge(entity);
-            await _table.ExecuteAsync(operation);
-
-            await AddMessageAsync(entity);
-        }
-
-        private async Task AddMessageAsync(StopwatchEntity entity)
-        {
-            var messageString = JsonConvert.SerializeObject(entity);
-            var message = new CloudQueueMessage(messageString);
-            await _queue.AddMessageAsync(message);
-        }
-
+        
     }
 }

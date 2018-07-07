@@ -28,7 +28,8 @@ namespace StopwatchFunction
                     "Please pass a username and/or stopwatchname on the query string or in the request body");
             }
 
-            IStopwatchDetails stopwatchDetails = new StopwatchDetails();
+            IAzureService azureService = new AzureService();
+            IStopwatchDetails stopwatchDetails = new StopwatchDetails(azureService);
             var stopwatchStatus = new SaveStatus(stopwatchDetails);
             stopwatchStatus.Save(requestBody);
 

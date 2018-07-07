@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -32,9 +31,10 @@ namespace StopwatchFunction
                     "Please pass a username and/or stopwatchname on the query string or in the request body");
             }
 
-            IStopwatchDetails stopwatchDetails = new StopwatchDetails();
+            IAzureService azureService = new AzureService();
+            IStopwatchDetails stopwatchDetails = new StopwatchDetails(azureService);
             var stopwatchStatus = new GetStatus(stopwatchDetails);
-            var userDetails = JsonConvert.SerializeObject(await stopwatchStatus.Retrieve(requestBody));
+            var userDetails = JsonConvert.SerializeObject(await stopwatchStatus.RetrieveElapsedTime(requestBody)); //If webjob is running change this to .Retrieve
 
             return req.CreateResponse(HttpStatusCode.OK, userDetails);
         }

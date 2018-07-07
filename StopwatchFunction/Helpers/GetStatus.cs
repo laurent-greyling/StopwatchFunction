@@ -19,5 +19,10 @@ namespace StopwatchFunction.Helpers
         {
             return await _stopwatchDetails.Retrieve(userDetails);
         }
+
+        public async Task<List<UserDetailsModel>> RetrieveElapsedTime(UserDetailsEntity userDetails)
+        {
+            return await _stopwatchDetails.RetrieveElaspedTime(userDetails);
+        }
     }
 }
