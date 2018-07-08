@@ -4,23 +4,21 @@
              x:Class="MobileStopwatch.StopwatchView">
     <ContentPage.Content>
         <StackLayout>
-            <ListView ItemsSource="{Binding UserDetails}" HasUnevenRows="True">
+            <ListView ItemsSource="{Binding UserDetails}" HasUnevenRows="True" ItemTapped="Show_Sopwatch">
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <ViewCell>
+                    <ViewCell>
                             <StackLayout Padding="5,5,5,5">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="100"/>
                                     </Grid.ColumnDefinitions>
-                                    <StackLayout Grid.Column="0">
-                                        <Label Text="{Binding UserName}"/>
-                                        <Label Text="{Binding StopWatchName}"/>
-                                        <Label Text="{Binding Status}"/>
-                                    </StackLayout>
-                                    <Label Grid.Column="1" Text="{Binding ElapsedTime}" />
-                                </Grid>
+                                <Label Grid.Column="0" Text="{Binding UserName}"/>
+                                <Label Grid.Column="1" Text="{Binding StopWatchName}"/>
+                                <Label Grid.Column="2" Text="{Binding Status}"/>
+                            </Grid>
                             </StackLayout>
                         </ViewCell>
                     </DataTemplate>

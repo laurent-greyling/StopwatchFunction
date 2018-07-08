@@ -1,4 +1,5 @@
-﻿using MobileStopwatch.Models;
+﻿using MobileStopwatch.Helpers;
+using MobileStopwatch.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,9 +12,43 @@ namespace MobileStopwatch.ViewModels
     public class ElapsedTimeViewModel : INotifyPropertyChanged
     {
         private TimeSpan _timeSpan;
-        public List<StopwatchDetails> _details { get; set; }
+        private string _timerString;
+        public StopwatchDetails _details { get; set; }
+        public string Title { get; set; }
 
-        public List<StopwatchDetails> Details
+        public TimeSpan TimeSpanx
+        {
+            get
+            {
+                return _timeSpan;
+            }
+            set
+            {
+                if (_timeSpan != value)
+                {
+                    _timeSpan = value;
+                    OnPropertyChanged("TimeSpanx");
+                }
+            }
+        }
+
+        public string TimerString
+        {
+            get
+            {
+                return _timerString;
+            }
+            set
+            {
+                if (_timerString != value)
+                {
+                    _timerString = value;
+                    OnPropertyChanged("TimerString");
+                }
+            }
+        }
+
+        public StopwatchDetails Details
         {
             get
             {
@@ -29,27 +64,29 @@ namespace MobileStopwatch.ViewModels
             }
         }
 
-        public ElapsedTimeViewModel(List<StopwatchDetails> stopwatchDetails)
+        public ElapsedTimeViewModel(StopwatchDetails stopwatchDetails)
         {
-            var sw = new Timer
+            Title = $"{stopwatchDetails.UserName} {stopwatchDetails.StopWatchName}";
+            var time = TimeSpan.TryParse(stopwatchDetails.ElapsedTime, out TimeSpan serverTimeSpan);
+            _timeSpan = serverTimeSpan;
+            _timerString = stopwatchDetails.ElapsedTime;
+
+            if (stopwatchDetails.Status != StopwatchStatus.Stop.ToString())
             {
-                Interval = 1
-            };
-            sw.Start();
-            foreach (var item in stopwatchDetails)
-            {                
-                var time = TimeSpan.TryParse(item.ElapsedTime, out _timeSpan);
+                var sw = new Timer(0.001);
                 sw.Elapsed += Elapsed_Time;
-                item.ElapsedTime = _timeSpan.ToString();
-            }
+
+                sw.Start();
+            }            
 
             Details = stopwatchDetails;
         }
 
         private void Elapsed_Time(object sender, ElapsedEventArgs e)
         {
-            var second = TimeSpan.FromSeconds(1);
-            _timeSpan.Add(second);
+            var timer = TimeSpan.FromSeconds(0.001);
+            TimeSpanx = TimeSpanx.Add(timer);
+            TimerString = TimeSpanx.ToString();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

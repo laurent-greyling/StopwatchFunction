@@ -17,11 +17,16 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Helpers\AppConstants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Helpers\StopwatchStatus.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Models\StopwatchDetails.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\UserDetailsModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)StopWatchTimerView.xaml.cs">
+      <DependentUpon>StopWatchTimerView.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)StopwatchView.xaml.cs">
       <DependentUpon>StopwatchView.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -31,6 +36,12 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)StopwatchView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)StopWatchTimerView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </EmbeddedResource>

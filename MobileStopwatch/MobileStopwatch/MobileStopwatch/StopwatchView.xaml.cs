@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 
@@ -19,6 +20,15 @@ namespace MobileStopwatch
 
             BindingContext = this;
 		}
+
+        private async Task Show_Sopwatch(object sender, ItemTappedEventArgs e)
+        {
+            if (e.Item == null) return;
+
+            var stopwatchItem = (StopwatchDetails)e.Item;
+
+            await Navigation.PushModalAsync(new StopWatchTimerView(stopwatchItem));
+        }
 
     }
 }

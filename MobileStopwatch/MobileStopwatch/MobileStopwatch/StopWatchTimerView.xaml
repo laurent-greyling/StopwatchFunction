@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MobileStopwatch.StopWatchTimerView">
+    <ContentPage.Content>
+        <StackLayout Padding="5,5,5,5">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="50"/>
+                    <RowDefinition Height="50"/>
+                </Grid.RowDefinitions>
+                <Label Grid.Row="0" Text="{Binding Title}"
+                VerticalOptions="CenterAndExpand" 
+                HorizontalOptions="CenterAndExpand" />
+                <Label x:Name="TimeString" Grid.Row="1" Text="{Binding TimerString}"
+                VerticalOptions="CenterAndExpand" 
+                HorizontalOptions="CenterAndExpand" />
+            </Grid>
+            <StackLayout Orientation="Horizontal">
+                <Button Text="Start" Clicked="Start_Timer"/>
+                <Button Text="Stop" Clicked="Stop_Timer"/>
+                <Button Text="Restart" Clicked="Restart_Timer"/>
+            </StackLayout>
+        </StackLayout>
+    </ContentPage.Content>
+</ContentPage>
