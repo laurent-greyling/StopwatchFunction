@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:MobileStopwatch"
+             x:Class="MobileStopwatch.MainPage">
+
+    <StackLayout Padding="5,5,5,5">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="50"/>
+                <RowDefinition Height="50"/>
+                <RowDefinition Height="50"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Label Grid.Row="0"
+                   Grid.Column="0"
+                   Text="User Name:" 
+                   HorizontalOptions="Start"
+                   VerticalOptions="StartAndExpand" />
+            <Entry Grid.Row="0"
+                   Grid.Column="1"
+                   x:Name="UserName"/>
+            <Label Grid.Row="1"
+                   Grid.Column="0"
+                   Text="Stopwatch Name:" 
+                   HorizontalOptions="Start"
+                   VerticalOptions="StartAndExpand" />
+            <Entry Grid.Row="1"
+                   Grid.Column="1"
+                   x:Name="StopwatchName"/>
+        </Grid>       
+        <StackLayout Orientation="Horizontal">
+            <Button Text="View"
+                    Clicked="View_Stopwatch"/>
+            <Button Text="Create"
+                    Clicked="Create_Stopwatch"/>
+        </StackLayout>
+    </StackLayout>
+
+</ContentPage>
